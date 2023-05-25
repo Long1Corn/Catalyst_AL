@@ -353,7 +353,7 @@ class CIFData(Dataset):
 
             aug_x = 3
             aug_y = 3
-            aug_z = np.random.randint(1, 3, size=1)
+            aug_z = np.random.randint(1, 3)
             slab.make_supercell([[aug_x, 0, 0], [0, aug_y, 0], [0, 0, aug_z]])
         else:
             slab = crystal

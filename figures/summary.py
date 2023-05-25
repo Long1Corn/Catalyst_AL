@@ -6,7 +6,7 @@ import pandas as pd
 from chemformula import ChemFormula
 from matplotlib import pyplot as plt
 
-data = pd.read_csv(r"D:\Pyprojects\catalyst\AL\cgcnn-master\cgcnn\save_dir\Round_2_2\r2_predictions.csv")
+data = pd.read_csv(r"Results/Round_2/predictions.csv")
 data = data[['Crystals', 'M']].values
 
 result_lst = []

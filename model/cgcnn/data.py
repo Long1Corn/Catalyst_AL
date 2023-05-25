@@ -1,11 +1,8 @@
-from __future__ import print_function, division
-
 import csv
 import functools
 import json
 import os
 import random
-import re
 import warnings
 
 import numpy as np

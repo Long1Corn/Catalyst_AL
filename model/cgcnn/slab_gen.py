@@ -2,10 +2,6 @@ from pymatgen.core import Structure, Lattice, Molecule
 from pymatgen.analysis.adsorption import *
 from pymatgen.core.surface import generate_all_slabs
 from pymatgen.io.cif import CifWriter
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from matplotlib import pyplot as plt
-from pymatgen.ext.matproj import MPRester
-from pymatgen.io.vasp.inputs import Poscar
 import os
 import pandas as pd
 

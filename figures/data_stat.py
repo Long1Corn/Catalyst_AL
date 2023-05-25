@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.pyplot import figure
 
-data_pth = r'AL/Cat_Data/Slab_All'
+data_pth = r'Cat_Data/Slab_All'
 data_lst = []
 
 for file in os.listdir(data_pth):

@@ -3,7 +3,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import numpy as np
 
-data_path = r'AL/cgcnn-master/cgcnn/save_dir/Round_2_2/R2_prob.csv'
+data_path = r'Results/Round_2/R2_prob.csv'
 data = pd.read_csv(data_path)
 
 prob = data['CDF'].values

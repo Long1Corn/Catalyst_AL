@@ -1,27 +1,19 @@
-import argparse
 import os
-import shutil
-import sys
 import time
-import warnings
 from random import sample
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from sklearn import metrics
 from torch.autograd import Variable
 from torch.optim.lr_scheduler import MultiStepLR
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from cgcnn.data_process import CIFData
-from cgcnn.data_process import collate_pool, get_train_val_test_loader
-from cgcnn.model import CrystalGraphConvNet
-
-
-# from cfg import CFG
+from model.cgcnn.data_process import CIFData
+from model.cgcnn.data_process import collate_pool, get_train_val_test_loader
+from model.cgcnn.model import CrystalGraphConvNet
 
 
 class Crystal_Trainer:
@@ -127,7 +119,6 @@ class Crystal_Trainer:
         # switch to train mode
         self.model.train()
         end = time.time()
-        total_loss = 0
 
         for i, (input, target, _) in enumerate(self.train_loader):
             # measure data loading time
@@ -160,7 +151,7 @@ class Crystal_Trainer:
             # compute gradient and do SGD step
 
             self.optimizer.zero_grad()
-            total_loss.backward()
+            loss.backward()
             self.optimizer.step()
             self.scheduler.step()
 
@@ -310,8 +301,6 @@ class Crystal_Trainer:
 
         save_path = os.path.join(save_dir, "predictions.csv")
         predictions.to_csv(save_path, header=True, index=False)
-
-
 
         return predictions
 
