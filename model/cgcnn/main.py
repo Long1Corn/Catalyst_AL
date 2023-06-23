@@ -12,7 +12,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from model.cgcnn.data_process import CIFData
-from model.cgcnn.data_process import collate_pool, get_train_val_test_loader
+from model.cgcnn.data_process import collate_pool, get_data_loader
 from model.cgcnn.model import CrystalGraphConvNet
 
 
@@ -23,26 +23,18 @@ class Crystal_Trainer:
         self.build_model()
 
         np.set_printoptions(precision=4)
-
         torch.set_printoptions(precision=4)
 
     def load_data(self):
         self.dataset = CIFData(label_dir=self.cfg.label_dir, properties=self.cfg.properties,
                                struct_dir=self.cfg.structure_dir, aug=self.cfg.augmentation)
         collate_fn = collate_pool
-        self.train_loader, self.test_loader = get_train_val_test_loader(
+        self.data_loader = get_data_loader(
             dataset=self.dataset,
             collate_fn=collate_fn,
             batch_size=self.cfg.batch_size,
-            train_ratio=self.cfg.train_ratio,
             num_workers=self.cfg.workers,
-            val_ratio=self.cfg.val_ratio,
-            test_ratio=self.cfg.test_ratio,
-            pin_memory=self.cfg.cuda,
-            train_size=self.cfg.train_size,
-            val_size=self.cfg.val_size,
-            test_size=self.cfg.test_size,
-            return_test=True)
+            pin_memory=self.cfg.cuda)
 
         # obtain target value normalizer
 
@@ -66,28 +58,14 @@ class Crystal_Trainer:
         # define loss func and optimizer
         self.criterion = nn.MSELoss()
 
-        if self.cfg.optim == 'SGD':
-            self.optimizer = optim.SGD(self.model.parameters(), self.cfg.lr,
-                                       momentum=self.cfg.momentum,
-                                       weight_decay=self.cfg.weight_decay)
-        elif self.cfg.optim == 'Adam':
-            self.optimizer = optim.Adam(self.model.parameters(), self.cfg.lr,
-                                        weight_decay=self.cfg.weight_decay)
-        else:
-            raise NameError('Only SGD or Adam is allowed as --optim')
+        self.optimizer = optim.Adam(self.model.parameters(), self.cfg.lr,
+                                    weight_decay=self.cfg.weight_decay)
 
         self.scheduler = MultiStepLR(self.optimizer, milestones=self.cfg.lr_milestones, gamma=0.1)
 
     def train(self):
-        # global args, best_mae_error
 
-        best_mae_error = 1e10
-
-        # load data
-
-        # build model
-
-        for epoch in range(self.cfg.start_epoch, self.cfg.epochs):
+        for epoch in range(self.cfg.epochs):
             # train for one epoch
             self.train_epoch(epoch)
 
@@ -107,8 +85,6 @@ class Crystal_Trainer:
             'args': vars(self.cfg)
         }, filename=save_path)
 
-        self.validate(self.test_loader, test=True)
-
     def train_epoch(self, epoch):
         batch_time = AverageMeter()
         data_time = AverageMeter()
@@ -120,7 +96,7 @@ class Crystal_Trainer:
         self.model.train()
         end = time.time()
 
-        for i, (input, target, _) in enumerate(self.train_loader):
+        for i, (input, target, _) in enumerate(self.data_loader):
             # measure data loading time
 
             data_time.update(time.time() - end)
@@ -168,81 +144,6 @@ class Crystal_Trainer:
                 epoch + 1, batch_time=batch_time,
                 data_time=data_time, loss=losses, mae_errors=mae_errors))
 
-        if epoch % self.cfg.test_freq == self.cfg.test_freq - 1:
-            self.validate(self.test_loader)
-
-    def validate(self, data_loader=None):
-        eval_times = 50
-
-        if data_loader is None:
-            data_loader = self.test_loader
-
-        # switch to evaluate mode
-        self.model.eval()
-        for m in self.model.modules():
-            if m.__class__.__name__.startswith('Dropout'):
-                m.train()
-
-        mae_error = 0
-        pred_list = []
-        true_list = []
-        std_list = []
-        correct_list = []
-
-        with torch.no_grad():
-
-            for i, (input, target, batch_cif_ids) in enumerate(data_loader):
-                input_var = (Variable(input[0].cuda(non_blocking=True)),
-                             Variable(input[1].cuda(non_blocking=True)),
-                             input[2].cuda(non_blocking=True),
-                             [crys_idx.cuda(non_blocking=True) for crys_idx in input[3]],
-                             [crys_idx.cuda(non_blocking=True) for crys_idx in input[4]])
-
-                target_normed = self.normalizer.norm(target)
-
-                target_var = Variable(target_normed.cuda(non_blocking=True))
-
-                outputs = np.zeros((eval_times, len(target), len(self.cfg.properties)))
-                for j in range(eval_times):
-                    output = self.model(*input_var)
-                    output = self.normalizer.denorm(output.data.cpu())
-                    outputs[j, :] = output
-
-                outputs = -outputs[:, :, 0] + outputs[:, :, 1]
-                target = -target[:, 0] + target[:, 1]
-
-                mean = np.mean(outputs, axis=0)
-                std = np.std(outputs, axis=0)
-                std_list.append(std)
-
-                correct = np.logical_and(target.numpy() > (mean - 2 * std),
-                                         target.numpy() < (mean + 2 * std))
-                correct_list.append(correct)
-                # print(batch_cif_ids, mean)
-
-                # measure accuracy and record loss
-                mae_error = mae_error + mae(mean, target)
-
-            # if i % self.cfg.print_freq == 0:
-            #     print('Test: [{0}/{1}]\t'
-            #           'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-            #           'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-            #           'MAE {mae_errors.val:.3f} ({mae_errors.avg:.3f})'.format(
-            #         i, len(data_loader), batch_time=batch_time, loss=losses,
-            #         mae_errors=mae_errors))
-        correct_list = np.hstack(std_list)
-        percent_in_range = np.sum(correct_list, axis=0) / len(correct_list)
-        std_list = np.hstack(std_list)
-        std = np.mean(std_list, axis=0)
-
-        star_label = '*'
-
-        print(' {star} MAE {mae_errors} Percent in range {p}% STD {std}'.format(star=star_label,
-                                                                                mae_errors=mae_error / (i + 1),
-                                                                                std=std,
-                                                                                p=percent_in_range * 100))
-        return mae_error
-
     def predict(self, eval_times=50):
 
         if os.path.isfile(self.cfg.model_path):
@@ -261,11 +162,11 @@ class Crystal_Trainer:
 
         predictions = pd.DataFrame(data=None)
 
-        L = len(self.test_loader)
+        L = len(self.data_loader)
         print("Start prediction:\n")
 
         with torch.no_grad():
-            for i, (input, target, batch_cif_ids) in enumerate(self.test_loader):
+            for i, (input, target, batch_cif_ids) in enumerate(self.data_loader):
 
                 input_var = (Variable(input[0].cuda(non_blocking=True)),
                              Variable(input[1].cuda(non_blocking=True)),

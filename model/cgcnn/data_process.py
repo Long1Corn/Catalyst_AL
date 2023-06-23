@@ -18,77 +18,13 @@ from torch.utils.data.dataloader import default_collate
 from torch.utils.data.sampler import SubsetRandomSampler
 
 
-def get_train_val_test_loader(dataset, collate_fn=default_collate,
-                              batch_size=64, train_ratio=None,
-                              val_ratio=0.1, test_ratio=0.1, return_test=True,
-                              num_workers=1, pin_memory=False, **kwargs):
-    """
-    Utility function for dividing a dataset to train, val, test datasets.
+def get_data_loader(dataset, collate_fn=default_collate,
+                    batch_size=64, num_workers=1, pin_memory=False, ):
+    loader = DataLoader(dataset, batch_size=batch_size,
+                        num_workers=num_workers,
+                        collate_fn=collate_fn, pin_memory=pin_memory)
 
-    !!! The dataset needs to be shuffled before using the function !!!
-
-    Parameters
-    ----------
-    dataset: torch.utils.data.Dataset
-      The full dataset to be divided.
-    collate_fn: torch.utils.data.DataLoader
-    batch_size: int
-    train_ratio: float
-    val_ratio: float
-    test_ratio: float
-    return_test: bool
-      Whether to return the test dataset loader. If False, the last test_size
-      data will be hidden.
-    num_workers: int
-    pin_memory: bool
-
-    Returns
-    -------
-    train_loader: torch.utils.data.DataLoader
-      DataLoader that random samples the training data.
-    val_loader: torch.utils.data.DataLoader
-      DataLoader that random samples the validation data.
-    (test_loader): torch.utils.data.DataLoader
-      DataLoader that random samples the test data, returns if
-        return_test=True.
-    """
-    total_size = len(dataset)
-    if kwargs['train_size'] is None:
-        if train_ratio is None:
-            assert val_ratio + test_ratio <= 1
-            train_ratio = 1 - val_ratio - test_ratio
-            print(f'[Warning] train_ratio is None, using 1 - val_ratio - '
-                  f'test_ratio = {train_ratio} as training data.')
-        else:
-            assert train_ratio + val_ratio + test_ratio <= 1
-    indices = list(range(total_size))
-    if kwargs['train_size']:
-        train_size = kwargs['train_size']
-    else:
-        train_size = int(train_ratio * total_size)
-    if kwargs['test_size']:
-        test_size = kwargs['test_size']
-    else:
-        test_size = int(test_ratio * total_size)
-
-    train_sampler = SubsetRandomSampler(indices[:train_size])
-
-    if test_size > 0:
-        test_sampler = SubsetRandomSampler(indices[-test_size:])
-    else:
-        test_sampler = SubsetRandomSampler(indices[:train_size])
-
-    train_loader = DataLoader(dataset, batch_size=batch_size,
-                              sampler=train_sampler,
-                              num_workers=num_workers,
-                              collate_fn=collate_fn, pin_memory=pin_memory)
-
-    test_loader = DataLoader(dataset, batch_size=batch_size,
-                             sampler=test_sampler,
-                             num_workers=num_workers,
-                             collate_fn=collate_fn, pin_memory=pin_memory)
-
-    return train_loader, test_loader
+    return loader
 
 
 def collate_pool(dataset_list):
@@ -148,8 +84,8 @@ def collate_pool(dataset_list):
             torch.cat(batch_nbr_fea_idx, dim=0),
             crystal_atom_idx,
             atom_pooling_index_list), \
-           torch.stack(batch_target, dim=0), \
-           batch_cif_ids
+        torch.stack(batch_target, dim=0), \
+        batch_cif_ids
 
 
 class GaussianDistance(object):

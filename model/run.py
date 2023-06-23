@@ -14,12 +14,12 @@ if __name__ == '__main__':
 
     cfg.properties = ["Binding_energy", "Energy_barrier"]
 
-    cfg.test_ratio = 0.3
+    cfg.test_ratio = 0.0
 
     cfg.augmentation = True
     cfg.epochs = 250
     cfg.lr_milestones = [150, ]
-    cfg.lr = 0.01
+    cfg.lr = 0.001
     cfg.batch_size = 16
     cfg.weight_decay = 0
     cfg.dropout = 0.1

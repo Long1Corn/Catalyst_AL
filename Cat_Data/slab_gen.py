@@ -32,10 +32,7 @@ for i, CIF_file in enumerate(CIF_files):
 
         slab.make_supercell([[3, 0, 0], [0, 3, 0], [0, 0, 1]])
 
-        # crystal_facets = [slab for slab in slabs if slab.miller_index == (1, 1, 1)][0]
-
         c = CifWriter(slab)
-
         file_name = r"{}_{}".format(name, index)
         c.write_file(os.path.join(save_path, file_name + ".cif"))
 
