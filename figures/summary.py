@@ -6,7 +6,7 @@ import pandas as pd
 from chemformula import ChemFormula
 from matplotlib import pyplot as plt
 
-data = pd.read_csv(r"Results/Round_2/predictions.csv")
+data = pd.read_csv(r"Results/Round_2/R2_mean_std.csv")
 data = data[['Crystals', 'M']].values
 
 result_lst = []
@@ -39,11 +39,12 @@ result_lst = np.array(result_lst)
 all_atom = np.unique(result_lst[:, 0])
 
 x = np.array([np.where(all_atom == atom) for atom in result_lst[:, 0]]).flatten()
-y = result_lst[:, 1].astype(np.float)
-c = result_lst[:, 2].astype(np.float)
+y = result_lst[:, 1].astype(float)
+c = result_lst[:, 2].astype(float)
 
 matplotlib.rcParams.update({'font.size':18})
 matplotlib.rcParams['axes.linewidth'] = 3
+matplotlib.rcParams['font.family'] = 'Arial'
 
 plt.figure(figsize=(20, 3), dpi=600)
 plt.scatter(x, y, s=np.exp((c + 5.5)), c=c, cmap='rainbow', alpha=0.7, vmin=-2, vmax=0.5)
@@ -65,4 +66,4 @@ plt.plot([30, 30], [0, 1], '--', c='gray', linewidth=1)
 
 
 
-plt.show()
+plt.show(dpi=1200)
