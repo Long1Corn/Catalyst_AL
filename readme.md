@@ -2,7 +2,7 @@
 
 This repository contains the data and code for the active learning searching in the paper "Atomic Design of Alkyne Semi-Hydrogenation Catalysts via Active Learning".
 
-![image](image.png)
+![image](img.png)
 
 ## Data
 All Ni-based alloy within the scope of this study are listed in [this directory](Cat_Data/Raw_Crystal_Data_All).
