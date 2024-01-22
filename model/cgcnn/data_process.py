@@ -280,19 +280,22 @@ class CIFData(Dataset):
         struct_path = os.path.join(self.struct_dir, prime_struct)
         crystal = self.get_strcut(struct_path + ".cif")
 
+
+        miller_str = cif_id.split('_')[1:]
+        miller_idx = [int(a) for a in miller_str]
+
+        slab_gen = SlabGenerator(crystal, miller_index=miller_idx, min_slab_size=10.0, min_vacuum_size=15.0)
+        slab = slab_gen.get_slab()
+
+        aug_x = 3
+        aug_y = 3
+
         if self.aug:
-            miller_str = cif_id.split('_')[1:]
-            miller_idx = [int(a) for a in miller_str]
-
-            slab_gen = SlabGenerator(crystal, miller_index=miller_idx, min_slab_size=10.0, min_vacuum_size=15.0)
-            slab = slab_gen.get_slab()
-
-            aug_x = 3
-            aug_y = 3
             aug_z = np.random.randint(1, 3)
-            slab.make_supercell([[aug_x, 0, 0], [0, aug_y, 0], [0, 0, aug_z]])
         else:
-            slab = crystal
+            aug_z = 1
+
+        slab.make_supercell([[aug_x, 0, 0], [0, aug_y, 0], [0, 0, aug_z]])
 
         atom_pooling_index = []
         atom_coords_z = slab.frac_coords[:, 2]
